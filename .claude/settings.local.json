@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m py_compile finalcode/pose_detector.py)",
+      "Bash(python -m py_compile finalcode/exercise/squat_analyzer.py)",
+      "Bash(python -m py_compile finalcode/exercise/pushup_analyzer.py)",
+      "Bash(python -m py_compile finalcode/analyzers/video_analyzer.py)",
+      "Bash(python -m py_compile finalcode/analyzers/camera_analyzer.py)",
+      "Bash(python -m py_compile finalcode/gui.py)",
+      "Bash(python -c ' *)"
+    ]
+  }
+}
