@@ -6,17 +6,30 @@ from ..angle_utils import AngleCalculator
 from .engine import ExerciseAnalyzer, AngleReading, Feedback, AnalysisResult
 
 class Phase(Enum):
-    UP = 0
-    DESCENDING = 1
-    BOTTOM = 2
-    ASCENDING = 3
+    """俯卧撑动作阶段枚举"""
+    UP = 0          # 撑起状态
+    DESCENDING = 1  # 下降中
+    BOTTOM = 2      # 底部
+    ASCENDING = 3   # 推起中
 
 class PushUpAnalyzer(ExerciseAnalyzer):
+    """俯卧撑动作分析器
+
+    通过分析人体关键点角度变化，检测俯卧撑动作的完成情况。
+    支持自适应校准（根据用户初始姿势调整判定阈值）、
+    三帧移动平均平滑处理、以及阶段状态机逻辑。
+    """
+
     def __init__(self, pose_detector: PoseDetector,
                  angle_calculator: AngleCalculator) -> None:
+        """初始化俯卧撑分析器
+
+        参数:
+            pose_detector: 姿态检测器实例
+            angle_calculator: 角度计算器实例
+        """
         super().__init__(pose_detector, angle_calculator)
 
-        # ---- 硬编码默认值（校准前使用） ----
         self.config = {
             "elbow_angle_bottom_min": 60,
             "elbow_angle_bottom_max": 100,
@@ -36,7 +49,6 @@ class PushUpAnalyzer(ExerciseAnalyzer):
         self.previous_elbow_angle = 180.0
         self.frame_number = 0
 
-        # ---- 自适应校准 ----
         self._calibrated = False
         self._calibration_frames = 30
         self._up_elbow_samples = []
@@ -45,16 +57,13 @@ class PushUpAnalyzer(ExerciseAnalyzer):
         self.bottom_threshold = 95
         self.up_threshold = 155
 
-        # ---- 角度平滑（3 帧移动平均） ----
         self._elbow_buffer = deque(maxlen=3)
         self._shoulder_buffer = deque(maxlen=3)
 
-        # ---- 时序去抖动 ----
         self.phase_debounce = 5
         self._pending_phase = None
         self._pending_count = 0
 
-        # ---- 防虚高 ----
         self._hit_bottom = False
         self._rep_start_frame = 0
         self._min_rep_frames = 15
@@ -63,6 +72,15 @@ class PushUpAnalyzer(ExerciseAnalyzer):
         return "俯卧撑"
 
     def analyze(self, frame: np.ndarray, results: PoseResult) -> AnalysisResult:
+        """分析单帧图像中的俯卧撑动作
+
+        参数:
+            frame: 输入图像
+            results: 姿态检测结果
+
+        返回:
+            AnalysisResult 包含肘部角度、身体角度、阶段状态和反馈信息
+        """
         self.frame_number += 1
 
         if results is None or len(results.keypoints) < 3:
@@ -73,7 +91,6 @@ class PushUpAnalyzer(ExerciseAnalyzer):
                 timestamp=0.0, frame_number=self.frame_number
             )
 
-        # 关键点获取：左侧优先 → 右侧回退 → 历史插值
         shoulder = self.pose_detector.get_keypoint_with_fallback(5, 6, results)
         elbow = self.pose_detector.get_keypoint_with_fallback(7, 8, results)
         wrist = self.pose_detector.get_keypoint_with_fallback(9, 10, results)
@@ -84,9 +101,8 @@ class PushUpAnalyzer(ExerciseAnalyzer):
         issues = []
         suggestions = []
         elbow_angle = None
-        body_angle = None  # 身体直线度
+        body_angle = None
 
-        # === 肘部角度（肩-肘-腕） ===
         if shoulder is not None and elbow is not None and wrist is not None:
             raw = self.angle_calculator.calculate_angle(shoulder, elbow, wrist)
             self._elbow_buffer.append(raw)
@@ -107,7 +123,6 @@ class PushUpAnalyzer(ExerciseAnalyzer):
                 elif self.current_phase == Phase.BOTTOM:
                     suggestions.append("屈肘至约90度")
 
-        # === 身体直线度（肩-髋-踝） ===
         if shoulder is not None and hip is not None and ankle is not None:
             raw_body = self.angle_calculator.calculate_angle(shoulder, hip, ankle)
             self._shoulder_buffer.append(raw_body)
@@ -137,15 +152,12 @@ class PushUpAnalyzer(ExerciseAnalyzer):
                 frame_number=self.frame_number
             )
 
-        # === 自适应校准 ===
         if not self._calibrated and elbow_angle is not None:
             self._calibrate(elbow_angle)
 
-        # === 阶段状态机 ===
         if elbow_angle is not None:
             self._update_phase(elbow_angle)
 
-        # === 判断标准 ===
         angle_standards = [a.is_standard for a in angles]
         is_standard = all(angle_standards) if angle_standards else False
 
@@ -166,7 +178,11 @@ class PushUpAnalyzer(ExerciseAnalyzer):
         )
 
     def _calibrate(self, elbow_angle: float) -> None:
-        """前 N 帧收集撑起姿态数据，计算个性化阈值"""
+        """自适应校准：根据前30帧数据自动计算个性化阈值
+
+        参数:
+            elbow_angle: 当前肘部角度
+        """
         if elbow_angle > 130:
             self._up_elbow_samples.append(elbow_angle)
 
@@ -178,12 +194,10 @@ class PushUpAnalyzer(ExerciseAnalyzer):
             else:
                 up_elbow = 170
 
-            # 从撑起角度推导阈值
             self.up_threshold = max(145, up_elbow * 0.90)
             self.descend_threshold = up_elbow * 0.81
             self.bottom_threshold = max(80, up_elbow * 0.54)
 
-            # 更新标准范围
             self.config["elbow_angle_up_min"] = int(self.up_threshold)
             self.config["elbow_angle_up_max"] = 180
             self.config["elbow_angle_bottom_min"] = max(55, int(up_elbow * 0.34))
@@ -193,6 +207,14 @@ class PushUpAnalyzer(ExerciseAnalyzer):
             self.config["elbow_angle_transition_max"] = int(up_elbow * 0.96)
 
     def _get_standard_range(self, joint: str):
+        """获取指定关节在当前阶段的标准角度范围
+
+        参数:
+            joint: 关节名称 ("elbow" 或 "shoulder")
+
+        返回:
+            (最小角度, 最大角度) 元组
+        """
         if joint == "elbow":
             if self.current_phase == Phase.UP:
                 return (self.config["elbow_angle_up_min"],
@@ -203,7 +225,7 @@ class PushUpAnalyzer(ExerciseAnalyzer):
             else:
                 return (self.config["elbow_angle_transition_min"],
                         self.config["elbow_angle_transition_max"])
-        else:  # shoulder / body alignment
+        else:
             if self.current_phase == Phase.UP:
                 return (self.config["shoulder_angle_up_min"],
                         self.config["shoulder_angle_up_max"])
@@ -215,11 +237,17 @@ class PushUpAnalyzer(ExerciseAnalyzer):
                         self.config["shoulder_angle_transition_max"])
 
     def _phase_name(self) -> str:
+        """获取当前阶段的中文名称"""
         names = {Phase.UP: "撑起", Phase.DESCENDING: "下降",
                  Phase.BOTTOM: "底部", Phase.ASCENDING: "推起"}
         return names.get(self.current_phase, "")
 
     def _update_phase(self, elbow_angle: float) -> None:
+        """更新动作阶段状态机
+
+        参数:
+            elbow_angle: 当前肘部角度
+        """
         angle_diff = elbow_angle - self.previous_elbow_angle
         target_phase = None
 
@@ -231,7 +259,7 @@ class PushUpAnalyzer(ExerciseAnalyzer):
             if elbow_angle < self.bottom_threshold and angle_diff < 1:
                 target_phase = Phase.BOTTOM
             elif elbow_angle > self.up_threshold:
-                target_phase = Phase.UP  # 放弃
+                target_phase = Phase.UP
 
         elif self.current_phase == Phase.BOTTOM:
             if angle_diff > 2:
@@ -249,7 +277,6 @@ class PushUpAnalyzer(ExerciseAnalyzer):
                 self._hit_bottom = False
                 self._rep_start_frame = 0
 
-        # 去抖动
         if target_phase is not None:
             if target_phase == self._pending_phase:
                 self._pending_count += 1

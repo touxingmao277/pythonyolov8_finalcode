@@ -7,6 +7,16 @@ from ..angle_utils import AngleCalculator
 
 @dataclass
 class AngleReading:
+    """单个关节角度的检测结果
+
+    属性:
+        name: 关节名称 (如 "肘部角度"、"膝盖角度")
+        value: 检测到的角度值
+        is_standard: 是否符合标准姿势
+        min_standard: 标准角度范围最小值
+        max_standard: 标准角度范围最大值
+        joint_pos: 关节在图像中的位置坐标
+    """
     name: str
     value: float
     is_standard: bool
@@ -16,6 +26,14 @@ class AngleReading:
 
 @dataclass
 class Feedback:
+    """动作分析反馈信息
+
+    属性:
+        is_standard: 当前姿势是否标准
+        message: 状态消息 (如 "下蹲"、"站立")
+        issues: 不标准的问题列表
+        suggestions: 改进建议列表
+    """
     is_standard: bool
     message: str
     issues: List[str]
@@ -23,6 +41,15 @@ class Feedback:
 
 @dataclass
 class AnalysisResult:
+    """单帧动作分析结果
+
+    属性:
+        is_detected: 是否检测到人体
+        angles: 各关节角度列表
+        feedback: 动作反馈信息
+        timestamp: 推理耗时
+        frame_number: 帧编号
+    """
     is_detected: bool
     angles: List[AngleReading]
     feedback: Feedback
@@ -31,6 +58,15 @@ class AnalysisResult:
 
 @dataclass
 class ExerciseStatistics:
+    """运动统计信息
+
+    属性:
+        total_count: 总动作次数
+        standard_count: 标准动作次数
+        standard_rate: 标准率 (百分比)
+        total_frames: 总帧数
+        standard_frames: 标准帧数
+    """
     total_count: int
     standard_count: int
     standard_rate: float
@@ -38,27 +74,59 @@ class ExerciseStatistics:
     standard_frames: int
 
 class ExerciseAnalyzer(ABC):
+    """动作分析器抽象基类
+
+    定义了所有具体动作分析器（如俯卧撑、深蹲）需要实现的接口。
+    支持自适应校准、阶段状态机、角度平滑和去抖动处理。
+    """
+
     def __init__(self, pose_detector: PoseDetector,
                  angle_calculator: AngleCalculator) -> None:
+        """初始化动作分析器
+
+        参数:
+            pose_detector: 姿态检测器实例
+            angle_calculator: 角度计算器实例
+        """
         self.pose_detector = pose_detector
         self.angle_calculator = angle_calculator
         self._reset_state()
 
     @abstractmethod
     def analyze(self, frame: np.ndarray, results: PoseResult) -> AnalysisResult:
+        """分析单帧图像中的动作
+
+        参数:
+            frame: 输入图像
+            results: 姿态检测结果
+
+        返回:
+            AnalysisResult 包含角度、反馈等信息
+        """
         pass
 
     @abstractmethod
     def get_exercise_name(self) -> str:
+        """获取动作名称
+
+        返回:
+            动作名称字符串 (如 "俯卧撑"、"深蹲")
+        """
         pass
 
     def _reset_state(self) -> None:
+        """重置分析器状态，用于开始新的分析会话"""
         self.total_count = 0
         self.standard_count = 0
         self.total_frames = 0
         self.standard_frames = 0
 
     def get_statistics(self) -> ExerciseStatistics:
+        """获取当前运动统计信息
+
+        返回:
+            ExerciseStatistics 包含各项统计数据
+        """
         standard_rate = (self.standard_count / max(self.total_count, 1)) * 100
         return ExerciseStatistics(
             total_count=self.total_count,

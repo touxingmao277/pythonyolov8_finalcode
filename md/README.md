@@ -14,13 +14,13 @@
 
 ## 技术栈
 
-| 组件 | 技术 |
-|------|------|
-| 编程语言 | Python 3.8+ |
+| 组件     | 技术                      |
+| -------- | ------------------------- |
+| 编程语言 | Python 3.8+               |
 | 姿态检测 | YOLOv8-pose (ultralytics) |
-| 深度学习 | PyTorch |
-| 图像处理 | OpenCV, PIL (Pillow) |
-| GUI | PyQt5 |
+| 深度学习 | PyTorch                   |
+| 图像处理 | OpenCV, PIL (Pillow)      |
+| GUI      | PyQt5                     |
 
 ## 安装
 
@@ -95,6 +95,7 @@ python -m finalcode.cli --mode camera --exercise squat --camera-id 1 --conf 0.3
 
 ```bash
 # 分析视频并保存结果
+# 分析视频并保存结果
 python -m finalcode.cli --mode video --exercise squat --input video/input/squat.mp4 --output result.mp4
 
 # 分析俯卧撑视频
@@ -121,14 +122,14 @@ print(f"动作次数: {stats.total_count}, 标准率: {stats.standard_rate:.1f}%
 
 ## 参数说明
 
-| 参数 | 说明 | 默认值 |
-|------|------|--------|
-| `--mode` | 分析模式：`camera` / `video` | 必填 |
-| `--exercise` | 运动类型：`squat` / `pushup` | 必填 |
-| `--input` | 输入视频路径（video 模式） | - |
-| `--output` | 输出视频路径 | - |
-| `--camera-id` | 摄像头 ID | 0 |
-| `--conf` | 检测置信度阈值 (0-1) | 0.3 |
+| 参数          | 说明                         | 默认值 |
+| ------------- | ---------------------------- | ------ |
+| `--mode`      | 分析模式：`camera` / `video` | 必填   |
+| `--exercise`  | 运动类型：`squat` / `pushup` | 必填   |
+| `--input`     | 输入视频路径（video 模式）   | -      |
+| `--output`    | 输出视频路径                 | -      |
+| `--camera-id` | 摄像头 ID                    | 0      |
+| `--conf`      | 检测置信度阈值 (0-1)         | 0.3    |
 
 ## 评估标准
 

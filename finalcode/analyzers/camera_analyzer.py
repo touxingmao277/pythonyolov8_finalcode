@@ -4,21 +4,39 @@ from PIL import Image, ImageDraw, ImageFont
 from ..exercise.engine import ExerciseAnalyzer, AnalysisResult
 
 class CameraAnalyzer:
+    """摄像头实时动作分析器
+
+    从摄像头读取视频流并进行实时动作分析，支持骨骼线绘制、
+    角度标注和状态信息显示。按 'q' 键退出。
+    """
+
     def __init__(self, analyzer: ExerciseAnalyzer,
                  camera_id: int = 0, width: int = 640,
                  height: int = 480) -> None:
+        """初始化摄像头分析器
+
+        参数:
+            analyzer: 动作分析器实例
+            camera_id: 摄像头设备ID，默认为0（第一个摄像头）
+            width: 视频帧宽度
+            height: 视频帧高度
+        """
         self.analyzer = analyzer
         self.camera_id = camera_id
         self.width = width
         self.height = height
         self.cap = None
         self.running = False
-        # 显示层去抖动
         self._display_msg = ""
         self._pending_msg = ""
         self._msg_stable_count = 0
 
     def start(self, window_name: str = "Pose Analysis") -> None:
+        """启动摄像头分析
+
+        参数:
+            window_name: 窗口名称
+        """
         self.cap = cv2.VideoCapture(self.camera_id)
 
         if not self.cap.isOpened():
@@ -52,6 +70,7 @@ class CameraAnalyzer:
         cv2.destroyAllWindows()
 
     def stop(self) -> None:
+        """停止摄像头分析，释放资源"""
         self.running = False
         if self.cap:
             self.cap.release()
@@ -64,6 +83,15 @@ class CameraAnalyzer:
         draw.text((x, y), text, font=font, fill=fill)
 
     def _draw_info(self, frame: np.ndarray, result: AnalysisResult) -> np.ndarray:
+        """在图像上绘制分析信息
+
+        参数:
+            frame: 输入图像
+            result: 分析结果
+
+        返回:
+            绘制了分析信息的图像
+        """
         frame_copy = frame.copy()
 
         try:

@@ -4,15 +4,35 @@ from PIL import Image, ImageDraw, ImageFont
 from ..exercise.engine import ExerciseAnalyzer, AnalysisResult, ExerciseStatistics
 
 class VideoAnalyzer:
+    """视频文件动作分析器
+
+    读取视频文件并进行逐帧动作分析，支持实时预览和分析结果保存。
+    在视频画面上叠加骨骼线、角度标注和状态信息。
+    """
+
     def __init__(self, analyzer: ExerciseAnalyzer) -> None:
+        """初始化视频分析器
+
+        参数:
+            analyzer: 动作分析器实例 (如 PushUpAnalyzer, SquatAnalyzer)
+        """
         self.analyzer = analyzer
-        # 显示层去抖动：消息需稳定 N 帧才更新
         self._display_msg = ""
         self._pending_msg = ""
         self._msg_stable_count = 0
 
     def analyze_video(self, video_path: str, output_path: str = None,
                      show_preview: bool = True) -> ExerciseStatistics:
+        """分析视频文件中的动作
+
+        参数:
+            video_path: 输入视频文件路径
+            output_path: 输出视频文件路径（可选，保存带标注的视频）
+            show_preview: 是否显示实时预览窗口
+
+        返回:
+            ExerciseStatistics 包含动作统计数据
+        """
         cap = cv2.VideoCapture(video_path)
 
         if not cap.isOpened():
@@ -61,6 +81,14 @@ class VideoAnalyzer:
         return self.analyzer.get_statistics()
 
     def analyze_frame(self, frame: np.ndarray) -> AnalysisResult:
+        """分析单帧图像
+
+        参数:
+            frame: 输入图像
+
+        返回:
+            AnalysisResult 分析结果
+        """
         pose_result = self.analyzer.pose_detector.detect_pose(frame)
         return self.analyzer.analyze(frame, pose_result)
 
@@ -68,12 +96,19 @@ class VideoAnalyzer:
     def _draw_text(draw, xy, text, font, fill, shadow_offset=2):
         """带阴影的文字，在任何背景下都清晰可见"""
         x, y = xy
-        # 先画黑色阴影
         draw.text((x + shadow_offset, y + shadow_offset), text, font=font, fill=(0, 0, 0))
-        # 再画主体颜色
         draw.text((x, y), text, font=font, fill=fill)
 
     def _draw_info(self, frame: np.ndarray, result: AnalysisResult) -> np.ndarray:
+        """在图像上绘制分析信息
+
+        参数:
+            frame: 输入图像
+            result: 分析结果
+
+        返回:
+            绘制了分析信息的图像
+        """
         frame_copy = frame.copy()
 
         try:
@@ -88,7 +123,6 @@ class VideoAnalyzer:
         draw = ImageDraw.Draw(img_pil)
 
         if result.is_detected:
-            # 关节角度标注
             for angle in result.angles:
                 text = f"{angle.value:.0f}°"
                 if hasattr(angle, 'joint_pos') and angle.joint_pos is not None:
@@ -98,11 +132,9 @@ class VideoAnalyzer:
                     self._draw_text(draw, (int(x) + 10, int(y)), angle.name, font_small, (255, 255, 255))
 
             stats = self.analyzer.get_statistics()
-            # 次数 — 金色大字
             self._draw_text(draw, (12, 12), f"次数: {stats.total_count}",
                            font_count, fill=(0, 230, 255))
 
-            # 状态消息
             if result.feedback.message:
                 self._update_display_msg(result.feedback.message)
                 msg_color = (0, 255, 80) if result.feedback.is_standard else (255, 200, 40)
