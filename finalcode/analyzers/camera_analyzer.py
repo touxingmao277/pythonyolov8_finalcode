@@ -6,8 +6,7 @@ from ..exercise.engine import ExerciseAnalyzer, AnalysisResult
 class CameraAnalyzer:
     """摄像头实时动作分析器
 
-    从摄像头读取视频流并进行实时动作分析，支持骨骼线绘制、
-    角度标注和状态信息显示。按 'q' 键退出。
+    从摄像头读取视频流并,进行实时动作分析。按 'q' 键退出。
     """
 
     def __init__(self, analyzer: ExerciseAnalyzer,
@@ -17,9 +16,9 @@ class CameraAnalyzer:
 
         参数:
             analyzer: 动作分析器实例
-            camera_id: 摄像头设备ID，默认为0（第一个摄像头）
-            width: 视频帧宽度
-            height: 视频帧高度
+            camera_id: 摄像头设备ID，默认为0
+            width: 视频宽度，640帧
+            height: 视频高度，480帧
         """
         self.analyzer = analyzer
         self.camera_id = camera_id
@@ -31,11 +30,11 @@ class CameraAnalyzer:
         self._pending_msg = ""
         self._msg_stable_count = 0
 
-    def start(self, window_name: str = "Pose Analysis") -> None:
-        """启动摄像头分析
+    def start(self, window_name: str = "LyingH Analysis") -> None:
+        """启动摄像头
 
         参数:
-            window_name: 窗口名称
+            window_name: 窗口名称，为 "LyingH Analysis"
         """
         self.cap = cv2.VideoCapture(self.camera_id)
 
@@ -70,14 +69,14 @@ class CameraAnalyzer:
         cv2.destroyAllWindows()
 
     def stop(self) -> None:
-        """停止摄像头分析，释放资源"""
+        """停止摄像头"""
         self.running = False
         if self.cap:
             self.cap.release()
 
     @staticmethod
     def _draw_text(draw, xy, text, font, fill, shadow_offset=2):
-        """带阴影的文字，在任何背景下都清晰可见"""
+        """文字样式"""
         x, y = xy
         draw.text((x + shadow_offset, y + shadow_offset), text, font=font, fill=(0, 0, 0))
         draw.text((x, y), text, font=font, fill=fill)
@@ -130,7 +129,7 @@ class CameraAnalyzer:
         return frame_copy
 
     def _update_display_msg(self, new_msg: str) -> None:
-        """消息需稳定 5 帧才更新显示，防止文字跳动"""
+        """消息需稳定 5 帧才更新显示"""
         if new_msg == self._pending_msg:
             self._msg_stable_count += 1
             if self._msg_stable_count >= 5:

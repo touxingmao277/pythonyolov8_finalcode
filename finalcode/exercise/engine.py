@@ -7,10 +7,10 @@ from ..angle_utils import AngleCalculator
 
 @dataclass
 class AngleReading:
-    """单个关节角度的检测结果
+    """关节角度的检测结果
 
     属性:
-        name: 关节名称 (如 "肘部角度"、"膝盖角度")
+        name: 关节名称
         value: 检测到的角度值
         is_standard: 是否符合标准姿势
         min_standard: 标准角度范围最小值
@@ -30,7 +30,7 @@ class Feedback:
 
     属性:
         is_standard: 当前姿势是否标准
-        message: 状态消息 (如 "下蹲"、"站立")
+        message: 状态消息
         issues: 不标准的问题列表
         suggestions: 改进建议列表
     """
@@ -41,7 +41,7 @@ class Feedback:
 
 @dataclass
 class AnalysisResult:
-    """单帧动作分析结果
+    """动作分析结果
 
     属性:
         is_detected: 是否检测到人体
@@ -74,9 +74,9 @@ class ExerciseStatistics:
     standard_frames: int
 
 class ExerciseAnalyzer(ABC):
-    """动作分析器抽象基类
+    """动作分析器
 
-    定义了所有具体动作分析器（如俯卧撑、深蹲）需要实现的接口。
+    定义了动作分析器（俯卧撑、深蹲）需要实现的接口。
     支持自适应校准、阶段状态机、角度平滑和去抖动处理。
     """
 
@@ -110,12 +110,12 @@ class ExerciseAnalyzer(ABC):
         """获取动作名称
 
         返回:
-            动作名称字符串 (如 "俯卧撑"、"深蹲")
+            动作名称 ( "俯卧撑"、"深蹲")
         """
         pass
 
     def _reset_state(self) -> None:
-        """重置分析器状态，用于开始新的分析会话"""
+        """重置分析器状态，开始新的分析"""
         self.total_count = 0
         self.standard_count = 0
         self.total_frames = 0

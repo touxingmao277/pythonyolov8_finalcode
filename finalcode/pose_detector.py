@@ -95,7 +95,7 @@ class PoseDetector:
         self._max_history = 3 # 最大历史记录数，用于平滑关键点位置
 
     def detect_pose(self, frame: np.ndarray) -> Optional[PoseResult]:
-        """检测单帧图像中的人体姿态
+        """检测图像中的人体姿态
 
         参数:
             frame: 输入图像 (BGR格式，numpy数组)
@@ -115,8 +115,8 @@ class PoseDetector:
         keypoints_data = results[0].keypoints
         box_data = results[0].boxes
 
-        # 检查关键点数据是否为空
-        if len(keypoints_data) == 0 or len(box_data) == 0:
+        # 检查边界框数据是否为空
+        if len(box_data) == 0:
             return None
 
         keypoints = []
@@ -165,7 +165,7 @@ class PoseDetector:
         )
 
     def get_keypoint_coords(self, keypoint_id: int, results: PoseResult) -> Optional[Tuple[float, float]]:
-        """获取指定关键点的坐标
+        """获取关键点的坐标
 
         参数:
             keypoint_id: 关键点编号 (0-16)
@@ -191,7 +191,7 @@ class PoseDetector:
 
     def get_keypoint_with_fallback(self, primary_id: int, fallback_id: int,
                                     results: PoseResult) -> Optional[Tuple[float, float]]:
-        """获取关键点坐标，支持左右对称回退
+        """获取关键点坐标，支持对称回退
 
         优先返回主侧关键点，如果主侧置信度不足则尝试对侧，
         最后回退到历史缓存数据。
@@ -215,36 +215,12 @@ class PoseDetector:
                 return self._kp_history[kp_id][-1]
         return None
 
-    def get_best_keypoint(self, left_id: int, right_id: int,
-                          results: PoseResult) -> Optional[Tuple[float, float]]:
-        """获取左右两侧中置信度更高的关键点
-
-        参数:
-            left_id: 左侧关键点编号
-            right_id: 右侧关键点编号
-            results: 姿态检测结果
-
-        返回:
-            置信度更高的关键点坐标
-        """
-        # 获取左右两侧关键点坐标
-        left_kp = self.get_keypoint_coords(left_id, results)
-        right_kp = self.get_keypoint_coords(right_id, results)
-        # 检查左右两侧关键点是否有坐标
-        if left_kp is not None and right_kp is not None:
-            left_conf = results.keypoints[left_id].confidence
-            right_conf = results.keypoints[right_id].confidence
-            # 比较左右两侧关键点置信度，返回置信度更高的坐标
-            return left_kp if left_conf >= right_conf else right_kp
-        # 返回第一个非None的坐标
-        return left_kp if left_kp is not None else right_kp
-
     def draw_skeleton(self, frame: np.ndarray, results: PoseResult,
                       line_color: Tuple[int, int, int] = (0, 255, 0),
                       point_color: Tuple[int, int, int] = (0, 255, 0),
                       point_radius: int = 3,
                       line_thickness: int = 2) -> np.ndarray: # ndarray用于存储图像数据
-        """在图像上绘制人体骨骼线
+        """绘制骨骼线
 
         参数:
             frame: 输入图像
@@ -255,7 +231,7 @@ class PoseDetector:
             line_thickness: 骨骼线粗细
 
         返回:
-            绘制了骨骼线的图像副本
+            绘制了骨骼线的copy图像
         """
         # 复制输入图像
         frame_copy = frame.copy()

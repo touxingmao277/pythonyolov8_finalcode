@@ -19,7 +19,6 @@ from finalcode.exercise.pushup_analyzer import PushUpAnalyzer
 class PoseAnalysisGUI(QMainWindow):
     """人体动作分析图形界面
 
-    基于PyQt5开发的桌面应用程序，提供直观的动作分析界面。
     支持选择运动类型（深蹲/俯卧撑）、实时视频预览、
     角度显示、动作计数和反馈信息展示。
     """
@@ -27,7 +26,7 @@ class PoseAnalysisGUI(QMainWindow):
     def __init__(self):
         """初始化图形界面"""
         super().__init__()
-        self.setWindowTitle("人体动作分析系统")
+        self.setWindowTitle("LyingH Analysis")
         self.setGeometry(100, 100, 900, 700)
 
         self.pose_detector = PoseDetector()
@@ -137,7 +136,7 @@ class PoseAnalysisGUI(QMainWindow):
             self.feedback_text.append(f"\n分析结束 - 总次数: {stats.total_count}, 标准次数: {stats.standard_count}")
 
     def update_frame(self):
-        """定时更新视频帧"""
+        """更新视频帧"""
         if not self.cap or not self.current_analyzer:
             return
 
@@ -165,7 +164,7 @@ class PoseAnalysisGUI(QMainWindow):
 
     @staticmethod
     def _draw_text(draw, xy, text, font, fill, shadow_offset=2):
-        """带阴影的文字，在任何背景下都清晰可见"""
+        """带阴影的文字"""
         x, y = xy
         draw.text((x + shadow_offset, y + shadow_offset), text, font=font, fill=(0, 0, 0))
         draw.text((x, y), text, font=font, fill=fill)
@@ -209,7 +208,7 @@ class PoseAnalysisGUI(QMainWindow):
         return frame_copy
 
     def update_stats(self):
-        """更新统计信息显示"""
+        """更新统计信息"""
         if not self.current_analyzer:
             return
 
@@ -217,7 +216,7 @@ class PoseAnalysisGUI(QMainWindow):
         self.count_label.setText(f"动作次数: {stats.total_count}")
 
     def update_feedback(self, result):
-        """更新反馈信息显示"""
+        """更新反馈信息"""
         if not result.is_detected:
             self._set_feedback_stable(result.feedback.message)
             return
@@ -237,7 +236,7 @@ class PoseAnalysisGUI(QMainWindow):
         self._set_feedback_stable(feedback_text)
 
     def _set_feedback_stable(self, text: str) -> None:
-        """消息需稳定 5 帧才更新，防止文字跳动"""
+        """5 帧才更新，防止文字跳动"""
         if not hasattr(self, '_fb_pending'):
             self._fb_pending = ""
             self._fb_count = 0

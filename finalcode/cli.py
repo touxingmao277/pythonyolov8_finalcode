@@ -15,8 +15,8 @@ def main():
     """命令行动作分析程序入口
 
     支持两种分析模式：
-    - video: 分析视频文件
-    - camera: 实时分析摄像头画面
+    - video: 分析视频
+    - camera: 分析摄像头
 
     用法示例:
         python cli.py --mode camera --exercise squat
@@ -25,7 +25,7 @@ def main():
     parser = argparse.ArgumentParser(description='人体动作分析系统')
 
     parser.add_argument('--mode', type=str, required=True, choices=['video', 'camera'],
-                        help='分析模式: video(视频文件) 或 camera(摄像头)')
+                        help='分析模式: video(视频) 或 camera(摄像头)')
     parser.add_argument('--input', type=str, help='输入视频文件路径')
     parser.add_argument('--output', type=str, help='输出视频文件路径')
     parser.add_argument('--exercise', type=str, required=True, choices=['squat', 'pushup'],

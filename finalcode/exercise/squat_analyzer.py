@@ -6,7 +6,7 @@ from ..angle_utils import AngleCalculator
 from .engine import ExerciseAnalyzer, AngleReading, Feedback, AnalysisResult
 
 class Phase(Enum):
-    """深蹲动作阶段枚举"""
+    """深蹲动作阶段"""
     STANDING = 0    # 站立状态
     DESCENDING = 1  # 下蹲中
     BOTTOM = 2      # 底部
@@ -17,10 +17,10 @@ class SquatAnalyzer(ExerciseAnalyzer):
 
     通过分析人体关键点角度变化，检测深蹲动作的完成情况。
     支持自适应校准（根据用户站立姿势调整判定阈值）、
-    三帧移动平均平滑处理、以及阶段状态机逻辑。
+    三帧移动平均平滑处理，阶段状态机逻辑。
     分析的关键角度包括：
     - 膝盖角度（髋-膝-踝）
-    - 髋部角度（肩-髋-膝），反映躯干前倾程度
+    - 髋部角度（肩-髋-膝）
     """
 
     def __init__(self, pose_detector: PoseDetector,
@@ -28,8 +28,8 @@ class SquatAnalyzer(ExerciseAnalyzer):
         """初始化深蹲分析器
 
         参数:
-            pose_detector: 姿态检测器实例
-            angle_calculator: 角度计算器实例
+            pose_detector: 姿态检测器
+            angle_calculator: 角度计算器
         """
         super().__init__(pose_detector, angle_calculator)
 
@@ -76,7 +76,7 @@ class SquatAnalyzer(ExerciseAnalyzer):
         return "深蹲"
 
     def analyze(self, frame: np.ndarray, results: PoseResult) -> AnalysisResult:
-        """分析单帧图像中的深蹲动作
+        """分析单帧图像中的深蹲
 
         参数:
             frame: 输入图像
@@ -152,10 +152,9 @@ class SquatAnalyzer(ExerciseAnalyzer):
                 frame_number=self.frame_number
             )
 
-        if not self._calibrated and knee_angle is not None:
-            self._calibrate(knee_angle, hip_angle)
-
         if knee_angle is not None:
+            if not self._calibrated:
+                self._calibrate(knee_angle, hip_angle)
             self._update_phase(knee_angle)
 
         angle_standards = [a.is_standard for a in angles]
@@ -178,7 +177,7 @@ class SquatAnalyzer(ExerciseAnalyzer):
         )
 
     def _calibrate(self, knee_angle: float, hip_angle: float) -> None:
-        """自适应校准：根据前30帧站立数据自动计算个性化阈值
+        """根据前30帧站立数据自动计算阈值
 
         参数:
             knee_angle: 当前膝盖角度
@@ -222,10 +221,10 @@ class SquatAnalyzer(ExerciseAnalyzer):
             self.config["hip_angle_transition_max"] = int(stand_hip * 0.95)
 
     def _get_standard_range(self, joint: str):
-        """获取指定关节在当前阶段的标准角度范围
+        """获取关节在当前阶段的角度范围
 
         参数:
-            joint: 关节名称 ("knee" 或 "hip")
+            joint: 关节名称
 
         返回:
             (最小角度, 最大角度) 元组
@@ -258,7 +257,7 @@ class SquatAnalyzer(ExerciseAnalyzer):
         return names.get(self.current_phase, "")
 
     def _update_phase(self, knee_angle: float) -> None:
-        """更新动作阶段状态机
+        """判断位于哪个阶段
 
         参数:
             knee_angle: 当前膝盖角度

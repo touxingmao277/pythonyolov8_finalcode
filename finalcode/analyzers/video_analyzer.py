@@ -4,17 +4,16 @@ from PIL import Image, ImageDraw, ImageFont
 from ..exercise.engine import ExerciseAnalyzer, AnalysisResult, ExerciseStatistics
 
 class VideoAnalyzer:
-    """视频文件动作分析器
+    """视频动作分析器
 
     读取视频文件并进行逐帧动作分析，支持实时预览和分析结果保存。
-    在视频画面上叠加骨骼线、角度标注和状态信息。
     """
 
     def __init__(self, analyzer: ExerciseAnalyzer) -> None:
         """初始化视频分析器
 
         参数:
-            analyzer: 动作分析器实例 (如 PushUpAnalyzer, SquatAnalyzer)
+            analyzer: 动作分析器 (PushUpAnalyzer, SquatAnalyzer)
         """
         self.analyzer = analyzer
         self._display_msg = ""
@@ -23,11 +22,11 @@ class VideoAnalyzer:
 
     def analyze_video(self, video_path: str, output_path: str = None,
                      show_preview: bool = True) -> ExerciseStatistics:
-        """分析视频文件中的动作
+        """分析视频中的动作
 
         参数:
-            video_path: 输入视频文件路径
-            output_path: 输出视频文件路径（可选，保存带标注的视频）
+            video_path: 输入视频路径
+            output_path: 输出视频路径
             show_preview: 是否显示实时预览窗口
 
         返回:
@@ -94,7 +93,7 @@ class VideoAnalyzer:
 
     @staticmethod
     def _draw_text(draw, xy, text, font, fill, shadow_offset=2):
-        """带阴影的文字，在任何背景下都清晰可见"""
+        """文字样式shadow"""
         x, y = xy
         draw.text((x + shadow_offset, y + shadow_offset), text, font=font, fill=(0, 0, 0))
         draw.text((x, y), text, font=font, fill=fill)
@@ -147,7 +146,7 @@ class VideoAnalyzer:
         return frame_copy
 
     def _update_display_msg(self, new_msg: str) -> None:
-        """消息需稳定 5 帧才更新显示，防止文字跳动"""
+        """5 帧才更新显示，防止文字跳动"""
         if new_msg == self._pending_msg:
             self._msg_stable_count += 1
             if self._msg_stable_count >= 5:
